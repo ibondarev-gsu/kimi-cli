@@ -48,7 +48,4 @@ static/
 .memo/
 .entire
 .claude
-run-dev.ps1
-
-run-dev.sh
 
