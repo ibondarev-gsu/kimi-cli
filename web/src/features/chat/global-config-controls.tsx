@@ -24,6 +24,7 @@ import {
   ModelSelectorName,
   ModelSelectorTrigger,
 } from "@/components/ai-elements/model-selector";
+import { SubagentModelControls } from "./subagent-model-controls";
 import { cn } from "@/lib/utils";
 
 type ThinkingState = "enabled" | "disabled" | "forced";
@@ -269,7 +270,17 @@ export function GlobalConfigControls({
       </ModelSelector>
 
       <div className="mx-0 h-4 w-px bg-border/70" />
-      
+
+      <SubagentModelControls
+        config={config}
+        isUpdating={isUpdating}
+        onUpdate={async (subagentModels) => {
+          await update({ subagentModels });
+        }}
+      />
+
+      <div className="mx-0 h-4 w-px bg-border/70" />
+
       {thinkingTooltip ? (
         <Tooltip>
           <TooltipTrigger asChild>{thinkingToggle}</TooltipTrigger>

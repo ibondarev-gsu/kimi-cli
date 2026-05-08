@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from kimi_cli.config import Config
 from kimi_cli.llm import clone_llm_with_model_alias
 from kimi_cli.soul.agent import Agent, Runtime, load_agent
 from kimi_cli.subagents.models import AgentLaunchSpec, AgentTypeDefinition
@@ -16,7 +17,11 @@ class SubagentBuilder:
         type_def: AgentTypeDefinition,
         launch_spec: AgentLaunchSpec,
     ) -> Agent:
-        effective_model = self.resolve_effective_model(type_def=type_def, launch_spec=launch_spec)
+        effective_model = self.resolve_effective_model(
+            config=self._root_runtime.config,
+            type_def=type_def,
+            launch_spec=launch_spec,
+        )
         llm_override = clone_llm_with_model_alias(
             self._root_runtime.llm,
             self._root_runtime.config,
@@ -37,6 +42,14 @@ class SubagentBuilder:
 
     @staticmethod
     def resolve_effective_model(
-        *, type_def: AgentTypeDefinition, launch_spec: AgentLaunchSpec
+        *,
+        config: Config,
+        type_def: AgentTypeDefinition,
+        launch_spec: AgentLaunchSpec,
     ) -> str | None:
-        return launch_spec.model_override or launch_spec.effective_model or type_def.default_model
+        return (
+            launch_spec.model_override
+            or config.subagent_models.get(type_def.name)
+            or launch_spec.effective_model
+            or type_def.default_model
+        )

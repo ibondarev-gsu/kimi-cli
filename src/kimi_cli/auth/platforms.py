@@ -76,6 +76,16 @@ PLATFORMS: list[Platform] = [
         base_url="https://api.moonshot.ai/v1",
         allowed_prefixes=["kimi-k"],
     ),
+    Platform(
+        id="z-ai",
+        name="Z.AI (International)",
+        base_url="https://api.z.ai/api/coding/paas/v4",
+    ),
+    Platform(
+        id="z-ai-cn",
+        name="Zhipu AI Open Platform (bigmodel.cn)",
+        base_url="https://open.bigmodel.cn/api/paas/v4",
+    ),
 ]
 
 _PLATFORM_BY_ID = {platform.id: platform for platform in PLATFORMS}
@@ -252,6 +262,10 @@ async def refresh_managed_models(config: Config) -> bool:
 
 
 async def list_models(platform: Platform, api_key: str) -> list[ModelInfo]:
+    if platform.id.startswith("z-ai"):
+        from kimi_cli.auth.zai import generate_zai_token
+
+        api_key = generate_zai_token(api_key)
     async with new_client_session() as session:
         models = await _list_models(
             session,

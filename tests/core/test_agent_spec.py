@@ -56,8 +56,10 @@ def test_load_default_agent_spec():
                 "explore.yaml",
                 "Fast codebase exploration with prompt-enforced read-only behavior.",
             ),
-            "plan": ("plan.yaml", "Read-only implementation planning and architecture design."),
-        }
+            "plan": ("plan.yaml", "Read-only implementation planning and architecture design."), "reviewer": (
+    "../reviewer/agent.yaml",
+    "Expert code reviewer for bugs, security, performance, and style. Read-only.",
+)}
     )
 
     subagent_specs = {name: load_agent_spec(spec.path) for name, spec in spec.subagents.items()}

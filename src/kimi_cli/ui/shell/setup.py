@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, NamedTuple
+from typing import TYPE_CHECKING, NamedTuple, cast
 
 import aiohttp
 from prompt_toolkit import PromptSession
@@ -26,6 +26,7 @@ from kimi_cli.config import (
     load_config,
     save_config,
 )
+from kimi_cli.llm import ProviderType
 from kimi_cli.ui.shell.console import console
 from kimi_cli.ui.shell.slash import registry
 
@@ -139,12 +140,18 @@ async def _setup_platform(platform: Platform) -> _SetupResult | None:
     )
 
 
+def _provider_type_for_platform(platform_id: str) -> ProviderType:
+    if platform_id.startswith("z-ai"):
+        return cast(ProviderType, "zai")
+    return cast(ProviderType, "kimi")
+
+
 def _apply_setup_result(result: _SetupResult) -> None:
     config = load_config()
     provider_key = managed_provider_key(result.platform.id)
     model_key = managed_model_key(result.platform.id, result.selected_model.id)
     config.providers[provider_key] = LLMProvider(
-        type="kimi",
+        type=_provider_type_for_platform(result.platform.id),
         base_url=result.platform.base_url,
         api_key=result.api_key,
     )

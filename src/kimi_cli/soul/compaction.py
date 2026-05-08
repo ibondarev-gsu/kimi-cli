@@ -107,6 +107,7 @@ class SimpleCompaction:
     async def compact(
         self, messages: Sequence[Message], llm: LLM, *, custom_instruction: str = ""
     ) -> CompactionResult:
+        import json
         compact_message, to_preserve = self.prepare(messages, custom_instruction=custom_instruction)
         if compact_message is None:
             return CompactionResult(messages=to_preserve, usage=None)
@@ -145,8 +146,9 @@ class SimpleCompaction:
     def prepare(
         self, messages: Sequence[Message], *, custom_instruction: str = ""
     ) -> PrepareResult:
+        import json
         if not messages or self.max_preserved_messages <= 0:
-            return self.PrepareResult(compact_message=None, to_preserve=messages)
+            return self.PrepareResult(compact_message=None, to_preserve=list(messages))
 
         history = list(messages)
         preserve_start_index = len(history)
@@ -159,7 +161,7 @@ class SimpleCompaction:
                     break
 
         if n_preserved < self.max_preserved_messages:
-            return self.PrepareResult(compact_message=None, to_preserve=messages)
+            return self.PrepareResult(compact_message=None, to_preserve=list(messages))
 
         to_compact = history[:preserve_start_index]
         to_preserve = history[preserve_start_index:]

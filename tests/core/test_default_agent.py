@@ -243,6 +243,22 @@ At any time, you should be HELPFUL, CONCISE, and ACCURATE. Be thorough in your a
                     "kimi_cli.tools.web:FetchURL",
                 ),
             ),
+            (
+                "reviewer",
+                "Expert code reviewer for bugs, security, performance, and style. Read-only.",
+                "agent.yaml",
+                None,
+                "allowlist",
+                (
+                    "kimi_cli.tools.shell:Shell",
+                    "kimi_cli.tools.file:ReadFile",
+                    "kimi_cli.tools.file:ReadMediaFile",
+                    "kimi_cli.tools.file:Glob",
+                    "kimi_cli.tools.file:Grep",
+                    "kimi_cli.tools.web:SearchWeb",
+                    "kimi_cli.tools.web:FetchURL",
+                ),
+            ),
         ]
     )
 
@@ -292,6 +308,7 @@ instance can preserve previous findings and work.
 - `coder`: Good at general software engineering tasks. (Tools: Shell, ReadFile, ReadMediaFile, Glob, Grep, WriteFile, StrReplaceFile, SearchWeb, FetchURL, Model: inherit, Background: yes). When to use: Use this agent for non-trivial software engineering work that may require reading files, editing code, running commands, and returning a compact but technically complete summary to the parent agent.
 - `explore`: Fast codebase exploration with prompt-enforced read-only behavior. (Tools: Shell, ReadFile, ReadMediaFile, Glob, Grep, SearchWeb, FetchURL, Model: inherit, Background: yes). When to use: Fast agent specialized for exploring codebases. Use this when you need to quickly find files by patterns (e.g. "src/**/*.yaml"), search code for keywords (e.g. "database connection"), or answer questions about the codebase (e.g. "how does the auth module work?"). When calling this agent, specify the desired thoroughness level: "quick" for basic searches, "medium" for moderate exploration, or "thorough" for comprehensive analysis across multiple locations and naming conventions. Use this agent for any read-only exploration that will clearly require more than 3 tool calls. Prefer launching multiple explore agents concurrently when investigating independent questions.
 - `plan`: Read-only implementation planning and architecture design. (Tools: ReadFile, ReadMediaFile, Glob, Grep, SearchWeb, FetchURL, Model: inherit, Background: yes). When to use: Use this agent when the parent agent needs a step-by-step implementation plan, key file identification, and architectural trade-off analysis before code changes are made.
+- `reviewer`: Expert code reviewer for bugs, security, performance, and style. Read-only. (Tools: Shell, ReadFile, ReadMediaFile, Glob, Grep, SearchWeb, FetchURL, Model: inherit, Background: yes). When to use: Use this agent when you need a thorough code review, PR review, or architectural critique of changes. The reviewer is read-only and focuses on finding bugs, security issues, performance problems, style violations, and suggesting improvements. Provide the code or diff to review in the prompt.
 
 **Usage**
 

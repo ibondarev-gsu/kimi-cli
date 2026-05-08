@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Literal, cast, get_args
 from kosong.chat_provider import ChatProvider
 from pydantic import SecretStr
 
+from kimi_cli.auth.zai import generate_zai_token
 from kimi_cli.constant import USER_AGENT
 from kimi_cli.utils.logging import logger
 
@@ -24,6 +25,7 @@ type ProviderType = Literal[
     "google_genai",  # for backward-compatibility, equals to `gemini`
     "gemini",
     "vertexai",
+    "zai",
     "_echo",
     "_scripted_echo",
     "_chaos",
@@ -90,6 +92,11 @@ def augment_provider_with_env_vars(provider: LLMProvider, model: LLMModel) -> di
             if base_url := os.getenv("OPENAI_BASE_URL"):
                 provider.base_url = base_url
             if api_key := os.getenv("OPENAI_API_KEY"):
+                provider.api_key = SecretStr(api_key)
+        case "zai":
+            if base_url := os.getenv("ZAI_BASE_URL"):
+                provider.base_url = base_url
+            if api_key := os.getenv("ZAI_API_KEY"):
                 provider.api_key = SecretStr(api_key)
         case _:
             pass
@@ -165,6 +172,17 @@ def create_llm(
                 base_url=provider.base_url,
                 api_key=resolved_api_key,
                 reasoning_key=reasoning_key,
+                default_headers=dict(provider.custom_headers) if provider.custom_headers else None,
+            )
+        case "zai":
+            from kosong.contrib.chat_provider.openai_legacy import OpenAILegacy
+
+            zai_api_key = generate_zai_token(resolved_api_key)
+            chat_provider = OpenAILegacy(
+                model=model.model,
+                base_url=provider.base_url,
+                api_key=zai_api_key,
+                reasoning_key="reasoning_content",
                 default_headers=dict(provider.custom_headers) if provider.custom_headers else None,
             )
         case "openai_responses":

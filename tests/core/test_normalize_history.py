@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from kosong.message import ContentPart, Message, TextPart
+from kosong.message import ContentPart, ImageURLPart, Message, TextPart
 
 from kimi_cli.soul.dynamic_injection import normalize_history
 
@@ -39,9 +39,9 @@ def test_adjacent_user_messages_merged() -> None:
     result = normalize_history(msgs)
     assert len(result) == 1
     assert result[0].role == "user"
-    assert len(result[0].content) == 2
-    assert _text(result[0].content[0]) == "A"
-    assert _text(result[0].content[1]) == "B"
+    # Consecutive TextParts are coalesced into a single TextPart.
+    assert len(result[0].content) == 1
+    assert _text(result[0].content[0]) == "A\n\nB"
 
 
 def test_three_adjacent_user_messages_merged() -> None:
@@ -52,7 +52,8 @@ def test_three_adjacent_user_messages_merged() -> None:
     ]
     result = normalize_history(msgs)
     assert len(result) == 1
-    assert len(result[0].content) == 3
+    assert len(result[0].content) == 1
+    assert _text(result[0].content[0]) == "A\n\nB\n\nC"
 
 
 def test_non_adjacent_users_not_merged() -> None:
@@ -89,10 +90,12 @@ def test_mixed_roles_complex() -> None:
     result = normalize_history(msgs)
     assert len(result) == 4
     assert result[0].role == "user"
-    assert len(result[0].content) == 2  # A + B merged
+    assert len(result[0].content) == 1  # A + B coalesced
+    assert _text(result[0].content[0]) == "A\n\nB"
     assert result[1].role == "assistant"
     assert result[2].role == "user"
-    assert len(result[2].content) == 2  # C + D merged
+    assert len(result[2].content) == 1  # C + D coalesced
+    assert _text(result[2].content[0]) == "C\n\nD"
     assert result[3].role == "assistant"
 
 
@@ -103,10 +106,9 @@ def test_multipart_content_preserved() -> None:
     ]
     result = normalize_history(msgs)
     assert len(result) == 1
-    assert len(result[0].content) == 3
-    assert _text(result[0].content[0]) == "A"
-    assert _text(result[0].content[1]) == "B"
-    assert _text(result[0].content[2]) == "C"
+    # All consecutive TextParts are coalesced into one.
+    assert len(result[0].content) == 1
+    assert _text(result[0].content[0]) == "A\n\nB\n\nC"
 
 
 def test_notification_messages_not_merged_with_user_messages() -> None:
@@ -123,3 +125,27 @@ def test_notification_messages_not_merged_with_user_messages() -> None:
     ]
     result = normalize_history(msgs)
     assert len(result) == 2
+
+
+def test_text_parts_coalesced_around_image() -> None:
+    """Only consecutive TextParts are merged; ImageURLPart stays separate."""
+    msgs = [
+        Message(role="user", content=[TextPart(text="A")]),
+        Message(
+            role="user",
+            content=[
+                ImageURLPart(
+                    image_url=ImageURLPart.ImageURL(url="https://example.com/img.png")
+                )
+            ],
+        ),
+        Message(role="user", content=[TextPart(text="B")]),
+    ]
+    result = normalize_history(msgs)
+    assert len(result) == 1
+    assert len(result[0].content) == 3
+    assert isinstance(result[0].content[0], TextPart)
+    assert _text(result[0].content[0]) == "A"
+    assert isinstance(result[0].content[1], ImageURLPart)
+    assert isinstance(result[0].content[2], TextPart)
+    assert _text(result[0].content[2]) == "B"

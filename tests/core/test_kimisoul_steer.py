@@ -359,8 +359,7 @@ async def test_step_merges_plain_steer_with_dynamic_injection_in_model_history(
     ]
     assert captured_history[-1].role == "user"
     assert captured_history[-1].content == [
-        TextPart(text="Follow user note"),
-        TextPart(text="<system-reminder>\nInternal reminder\n</system-reminder>"),
+        TextPart(text="Follow user note\n\n<system-reminder>\nInternal reminder\n</system-reminder>"),
     ]
 
 

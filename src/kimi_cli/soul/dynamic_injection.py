@@ -5,7 +5,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from kosong.message import Message
+from kosong.message import ContentPart, Message, TextPart
 
 from kimi_cli.notifications import is_notification_message
 
@@ -55,6 +55,21 @@ class DynamicInjectionProvider(ABC):
         return None
 
 
+def _coalesce_text_parts(content: list[ContentPart]) -> list[ContentPart]:
+    """Merge consecutive TextParts into a single TextPart.
+
+    Some providers (e.g. Z.AI) only accept a plain string for ``user``
+    message content and reject multi-part arrays that contain only text.
+    """
+    coalesced: list[ContentPart] = []
+    for part in content:
+        if isinstance(part, TextPart) and coalesced and isinstance(coalesced[-1], TextPart):
+            coalesced[-1] = TextPart(text=coalesced[-1].text + "\n\n" + part.text)
+        else:
+            coalesced.append(part)
+    return coalesced
+
+
 def normalize_history(history: Sequence[Message]) -> list[Message]:
     """Merge adjacent user messages to produce a clean API input sequence.
 
@@ -78,7 +93,19 @@ def normalize_history(history: Sequence[Message]) -> list[Message]:
             and not is_notification_message(msg)
         ):
             merged_content = list(result[-1].content) + list(msg.content)
-            result[-1] = Message(role="user", content=merged_content)
+            result[-1] = Message(role="user", content=_coalesce_text_parts(merged_content))
         else:
-            result.append(msg)
+            # Coalesce even non-merged messages so that compaction summaries
+            # (which may contain many consecutive TextParts) serialize as a
+            # plain string instead of a multi-part array.
+            result.append(
+                Message(
+                    role=msg.role,
+                    content=_coalesce_text_parts(list(msg.content)),
+                    name=msg.name,
+                    tool_calls=msg.tool_calls,
+                    tool_call_id=msg.tool_call_id,
+                    partial=msg.partial,
+                )
+            )
     return result

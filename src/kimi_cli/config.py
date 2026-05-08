@@ -258,6 +258,13 @@ class Config(BaseModel):
             "Missing paths are silently skipped."
         ),
     )
+    subagent_models: dict[str, str] = Field(
+        default_factory=dict,
+        description=(
+            "Mapping of subagent type names to model aliases. "
+            "Overrides the agent spec default_model for built-in subagents."
+        ),
+    )
     telemetry: bool = Field(
         default=True,
         description="Enable anonymous telemetry to help improve kimi-cli. Set to false to disable.",

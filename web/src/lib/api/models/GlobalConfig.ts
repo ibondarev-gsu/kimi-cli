@@ -45,6 +45,18 @@ export interface GlobalConfig {
      * @memberof GlobalConfig
      */
     models: Array<ConfigModel>;
+    /**
+     * Subagent type -> model alias overrides
+     * @type {{ [key: string]: string; }}
+     * @memberof GlobalConfig
+     */
+    subagentModels: { [key: string]: string; };
+    /**
+     * Available built-in subagent types
+     * @type {Array<string>}
+     * @memberof GlobalConfig
+     */
+    builtinSubagentTypes: Array<string>;
 }
 
 /**
@@ -70,6 +82,8 @@ export function GlobalConfigFromJSONTyped(json: any, ignoreDiscriminator: boolea
         'defaultModel': json['default_model'],
         'defaultThinking': json['default_thinking'],
         'models': ((json['models'] as Array<any>).map(ConfigModelFromJSON)),
+        'subagentModels': json['subagent_models'] == null ? {} : json['subagent_models'],
+        'builtinSubagentTypes': json['builtin_subagent_types'] == null ? [] : json['builtin_subagent_types'],
     };
 }
 
@@ -87,6 +101,8 @@ export function GlobalConfigToJSONTyped(value?: GlobalConfig | null, ignoreDiscr
         'default_model': value['defaultModel'],
         'default_thinking': value['defaultThinking'],
         'models': ((value['models'] as Array<any>).map(ConfigModelToJSON)),
+        'subagent_models': value['subagentModels'],
+        'builtin_subagent_types': value['builtinSubagentTypes'],
     };
 }
 

@@ -34,3 +34,6 @@ agent:
     plan:
       path: ./plan.yaml
       description: "Read-only implementation planning and architecture design."
+    reviewer:
+      path: ../reviewer/agent.yaml
+      description: "Expert code reviewer for bugs, security, performance, and style. Read-only."

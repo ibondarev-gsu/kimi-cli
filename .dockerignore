@@ -1,0 +1,71 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Project files
+.vscode
+.env
+.env.local
+/tests_local
+uv.toml
+.idea/*
+
+# Build dependencies
+src/kimi_cli/deps/bin
+src/kimi_cli/deps/tmp
+
+# Web build artifacts
+src/kimi_cli/web/static/assets/
+
+# Vis build artifacts
+src/kimi_cli/vis/static/
+
+# Generated reports
+tests_ai/report.json
+tests_ai/terminal_bench_2_cache/
+jobs/
+tests_ai/accuracy_smoke/*.tsv
+
+# nix build result
+result
+result-*
+
+# macOS files
+.DS_Store
+
+# Rust files
+target/
+
+node_modules/
+static/
+.memo/
+.entire
+.claude
+.venv
+.git
+.pytest_cache
+.ruff_cache
+web/node_modules
+web/dist
+vis/node_modules
+vis/dist
+__pycache__
+*.pyc
+.agents/
+.idea/
+
+
+.pytest_cache
+.mypy_cache
+.pyright
+__pycache__
+*.egg-info
+*.egg
+

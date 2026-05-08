@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
 
 from kimi_cli import logger
+from kimi_cli.agentspec import DEFAULT_AGENT_FILE, load_agent_spec
 from kimi_cli.config import LLMModel, get_config_file, load_config, save_config
 from kimi_cli.llm import ProviderType, derive_model_capabilities
 from kimi_cli.web.runner.process import KimiCLIRunner
@@ -26,6 +27,12 @@ class GlobalConfig(BaseModel):
     default_model: str = Field(description="Current default model key")
     default_thinking: bool = Field(description="Current default thinking mode")
     models: list[ConfigModel] = Field(description="All configured models")
+    subagent_models: dict[str, str] = Field(
+        default_factory=dict, description="Subagent type -> model alias overrides"
+    )
+    builtin_subagent_types: list[str] = Field(
+        default_factory=list, description="Available built-in subagent types"
+    )
 
 
 class UpdateGlobalConfigRequest(BaseModel):
@@ -33,6 +40,9 @@ class UpdateGlobalConfigRequest(BaseModel):
 
     default_model: str | None = Field(default=None, description="New default model key")
     default_thinking: bool | None = Field(default=None, description="New default thinking mode")
+    subagent_models: dict[str, str] | None = Field(
+        default=None, description="Subagent type -> model alias overrides"
+    )
     restart_running_sessions: bool | None = Field(
         default=None, description="Whether to restart running sessions"
     )
@@ -98,10 +108,18 @@ def _build_global_config() -> GlobalConfig:
             )
         )
 
+    try:
+        default_spec = load_agent_spec(DEFAULT_AGENT_FILE)
+        builtin_types = list(default_spec.subagents.keys())
+    except Exception:
+        builtin_types = []
+
     return GlobalConfig(
         default_model=config.default_model,
         default_thinking=config.default_thinking,
         models=models,
+        subagent_models=config.subagent_models,
+        builtin_subagent_types=builtin_types,
     )
 
 
@@ -143,6 +161,17 @@ async def update_global_config(
                 detail=f"Model '{request.default_model}' not found in config",
             )
         config.default_model = request.default_model
+
+    # Update subagent_models
+    if request.subagent_models is not None:
+        # Validate that each model alias exists
+        for model_alias in request.subagent_models.values():
+            if model_alias and model_alias not in config.models:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Model '{model_alias}' not found in config",
+                )
+        config.subagent_models = request.subagent_models
 
     # Update default_thinking
     if request.default_thinking is not None:
