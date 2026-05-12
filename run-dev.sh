@@ -32,11 +32,15 @@ cd "$PROJECT_ROOT"
 
 export PYTHONPATH="${PROJECT_ROOT}/patches:${PROJECT_ROOT}/src${PYTHONPATH:+:$PYTHONPATH}"
 
-# Route all traffic through the corporate dev proxy (localhost:8888 → Tinkoff NGFW).
-# api.z.ai and internal tcsbank/tinkoff domains bypass the proxy.
-export HTTP_PROXY="${HTTP_PROXY:-http://localhost:8888}"
-export HTTPS_PROXY="${HTTPS_PROXY:-http://localhost:8888}"
-export NO_PROXY="${NO_PROXY:-localhost,127.0.0.1,::1},api.z.ai,*.tcsbank.ru,tcsbank.ru,*.tinkoff.ru,tinkoff.ru"
+# Proxy setup — only if corporate proxy is reachable
+if python3 -c "import socket; s=socket.create_connection(('localhost',8888), timeout=1); s.close()" 2>/dev/null; then
+    export HTTP_PROXY="${HTTP_PROXY:-http://localhost:8888}"
+    export HTTPS_PROXY="${HTTPS_PROXY:-http://localhost:8888}"
+    export NO_PROXY="${NO_PROXY:-localhost,127.0.0.1,::1},api.z.ai,*.tcsbank.ru,tcsbank.ru,*.tinkoff.ru,tinkoff.ru"
+    echo "==> Corporate proxy detected at localhost:8888"
+else
+    echo "==> No corporate proxy detected, using direct connection"
+fi
 
 # Auto-build web static if missing
 if [ ! -d "src/kimi_cli/web/static" ]; then

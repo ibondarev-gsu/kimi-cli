@@ -29,8 +29,25 @@ Set-Location $ProjectRoot
 
 $env:PYTHONPATH = "$ProjectRoot\patches;$ProjectRoot\src" + $(if ($env:PYTHONPATH) { ";$env:PYTHONPATH" } else { "" })
 
-# api.z.ai must bypass the proxy (direct connection via Tinkoff NGFW).
-$env:NO_PROXY = "$env:NO_PROXY,api.z.ai"
+# Proxy setup — only if corporate proxy is reachable
+$proxyReachable = $false
+try {
+    $tcp = New-Object System.Net.Sockets.TcpClient
+    $tcp.Connect("localhost", 8888)
+    $proxyReachable = $tcp.Connected
+    $tcp.Close()
+} catch {
+    $proxyReachable = $false
+}
+
+if ($proxyReachable) {
+    $env:HTTP_PROXY = if ($env:HTTP_PROXY) { $env:HTTP_PROXY } else { "http://localhost:8888" }
+    $env:HTTPS_PROXY = if ($env:HTTPS_PROXY) { $env:HTTPS_PROXY } else { "http://localhost:8888" }
+    $env:NO_PROXY = "$env:NO_PROXY,api.z.ai,*.tcsbank.ru,tcsbank.ru,*.tinkoff.ru,tinkoff.ru"
+    Write-Host "==> Corporate proxy detected at localhost:8888"
+} else {
+    Write-Host "==> No corporate proxy detected, using direct connection"
+}
 
 # Auto-build web static if missing
 $staticDir = Join-Path $ProjectRoot "src\kimi_cli\web\static"
