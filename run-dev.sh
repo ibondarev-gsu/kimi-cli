@@ -7,10 +7,30 @@
 
 set -euo pipefail
 
-PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$SCRIPT_DIR"
+ORIGINAL_PWD="$PWD"
+
+# Check uv is installed
+if ! command -v uv &> /dev/null; then
+    echo "ERROR: uv not found. Install it from https://docs.astral.sh/uv/" >&2
+    exit 1
+fi
+
+# Verify project structure
+if [ ! -f "$PROJECT_ROOT/pyproject.toml" ]; then
+    echo "ERROR: pyproject.toml not found in $PROJECT_ROOT" >&2
+    exit 1
+fi
+
+if [ ! -d "$PROJECT_ROOT/src/kimi_cli" ]; then
+    echo "ERROR: src/kimi_cli not found in $PROJECT_ROOT" >&2
+    exit 1
+fi
+
 cd "$PROJECT_ROOT"
 
-export PYTHONPATH="${PROJECT_ROOT}/patches:${PROJECT_ROOT}/src:${PYTHONPATH:-}"
+export PYTHONPATH="${PROJECT_ROOT}/patches:${PROJECT_ROOT}/src${PYTHONPATH:+:$PYTHONPATH}"
 
 # Route all traffic through the corporate dev proxy (localhost:8888 → Tinkoff NGFW).
 # api.z.ai and internal tcsbank/tinkoff domains bypass the proxy.
@@ -28,5 +48,17 @@ if [ ! -d "src/kimi_cli/web/static" ]; then
     fi
 fi
 
-# Run via uv with proxy patch pre-loaded
-exec uv run python "${PROJECT_ROOT}/patches/kimi" "$@"
+# Detect if user already passed --work-dir or -w
+has_work_dir=0
+for arg in "$@"; do
+    if [[ "$arg" == "-w" || "$arg" == "--work-dir" ]]; then
+        has_work_dir=1
+        break
+    fi
+done
+
+if [[ "$has_work_dir" -eq 0 ]]; then
+    exec uv run python "${PROJECT_ROOT}/patches/kimi" -w "$ORIGINAL_PWD" "$@"
+else
+    exec uv run python "${PROJECT_ROOT}/patches/kimi" "$@"
+fi

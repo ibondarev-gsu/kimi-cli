@@ -6,9 +6,28 @@
 # Example: .\run-dev.ps1 (no args = interactive shell)
 
 $ProjectRoot = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$OriginalPwd = Get-Location
+
+# Check uv is installed
+if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
+    Write-Error "uv not found. Install it from https://docs.astral.sh/uv/"
+    exit 1
+}
+
+# Verify project structure
+if (-not (Test-Path (Join-Path $ProjectRoot "pyproject.toml"))) {
+    Write-Error "pyproject.toml not found in $ProjectRoot"
+    exit 1
+}
+
+if (-not (Test-Path (Join-Path $ProjectRoot "src\kimi_cli") -PathType Container)) {
+    Write-Error "src\kimi_cli not found in $ProjectRoot"
+    exit 1
+}
+
 Set-Location $ProjectRoot
 
-$env:PYTHONPATH = "$ProjectRoot\patches;$ProjectRoot\src"
+$env:PYTHONPATH = "$ProjectRoot\patches;$ProjectRoot\src" + $(if ($env:PYTHONPATH) { ";$env:PYTHONPATH" } else { "" })
 
 # api.z.ai must bypass the proxy (direct connection via Tinkoff NGFW).
 $env:NO_PROXY = "$env:NO_PROXY,api.z.ai"
@@ -25,5 +44,17 @@ if (-not (Test-Path $staticDir)) {
     }
 }
 
-# Run via uv with proxy patch pre-loaded
-uv run python "$ProjectRoot\patches\kimi" @args
+# Detect if user already passed --work-dir or -w
+$hasWorkDir = $false
+foreach ($arg in $args) {
+    if ($arg -eq "-w" -or $arg -eq "--work-dir") {
+        $hasWorkDir = $true
+        break
+    }
+}
+
+if (-not $hasWorkDir) {
+    uv run python "$ProjectRoot\patches\kimi" -w $OriginalPwd @args
+} else {
+    uv run python "$ProjectRoot\patches\kimi" @args
+}
